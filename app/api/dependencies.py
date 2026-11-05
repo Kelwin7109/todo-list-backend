@@ -6,14 +6,24 @@ amanhã o serviço passar a receber um colaborador novo, muda este módulo — e
 nenhuma rota.
 """
 
+from typing import Annotated
+
 from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import obter_configuracao
+from app.core.exceptions import NaoAutenticado
 from app.core.security import HashBcrypt, HashDeSenha, TokenJWT
 from app.db.database import obter_sessao
+from app.models.usuario import Usuario
 from app.repositories.usuario import UsuarioRepositorio
 from app.services import UsuarioServico
+
+# Deixa a ausencia de token seguir pelo tratador de erros de dominio da API.
+_esquema_bearer = HTTPBearer(
+    auto_error=False, description="Token recebido no login"
+)
 
 
 def obter_hasher() -> HashDeSenha:
@@ -34,3 +44,19 @@ def obter_usuario_servico(
 ) -> UsuarioServico:
     """Serviço de usuários, com repositório, hasher e tokens já injetados."""
     return UsuarioServico(UsuarioRepositorio(sessao), hasher, tokens)
+
+
+def obter_usuario_atual(
+    credenciais: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(_esquema_bearer)
+    ],
+    servico: Annotated[UsuarioServico, Depends(obter_usuario_servico)],
+) -> Usuario:
+    """Identifica o usuario da requisicao a partir do token."""
+    if credenciais is None:
+        raise NaoAutenticado()
+    return servico.usuario_do_token(credenciais.credentials)
+
+
+# Use UsuarioAtual como tipo do parametro nas rotas que exigem login.
+UsuarioAtual = Annotated[Usuario, Depends(obter_usuario_atual)]
