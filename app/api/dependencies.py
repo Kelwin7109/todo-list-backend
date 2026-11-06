@@ -1,7 +1,7 @@
 """Provedores de dependência: montam os objetos que as rotas usam.
 
 Concentrar a montagem aqui tem um efeito prático: a rota declara que precisa
-de um UsuarioServico e não sabe quantas peças existem por trás dele. Se
+de um TarefaServico e não sabe quantas peças existem por trás dele. Se
 amanhã o serviço passar a receber um colaborador novo, muda este módulo — e
 nenhuma rota.
 """
@@ -17,8 +17,8 @@ from app.core.exceptions import NaoAutenticado
 from app.core.security import HashBcrypt, HashDeSenha, TokenJWT
 from app.db.database import obter_sessao
 from app.models.usuario import Usuario
-from app.repositories.usuario import UsuarioRepositorio
-from app.services import UsuarioServico
+from app.repositories import TarefaRepositorio, UsuarioRepositorio
+from app.services import TarefaServico, UsuarioServico
 
 # Deixa a ausencia de token seguir pelo tratador de erros de dominio da API.
 _esquema_bearer = HTTPBearer(
@@ -44,6 +44,13 @@ def obter_usuario_servico(
 ) -> UsuarioServico:
     """Serviço de usuários, com repositório, hasher e tokens já injetados."""
     return UsuarioServico(UsuarioRepositorio(sessao), hasher, tokens)
+
+
+def obter_tarefa_servico(
+    sessao: Session = Depends(obter_sessao),
+) -> TarefaServico:
+    """Serviço de tarefas, com o repositório de que depende."""
+    return TarefaServico(TarefaRepositorio(sessao))
 
 
 def obter_usuario_atual(

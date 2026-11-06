@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.api.routers import usuarios
+from app.api.routers import tasks, usuarios
 from app.core.config import obter_configuracao
 from app.core.exceptions import (
     EmailJaCadastrado,
@@ -51,7 +51,7 @@ async def ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Todo List API",
     description="Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC).",
-    version="0.5.0",
+    version="0.6.0",
     lifespan=ciclo_de_vida,
 )
 
@@ -141,3 +141,4 @@ def raiz() -> dict[str, str]:
 
 
 app.include_router(usuarios.router)
+app.include_router(tasks.router)
