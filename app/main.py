@@ -51,7 +51,7 @@ async def ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Todo List API",
     description="Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC).",
-    version="0.6.0",
+    version="0.7.0",
     lifespan=ciclo_de_vida,
 )
 
@@ -79,6 +79,11 @@ def _mensagem_de_validacao(erro: dict[str, Any]) -> tuple[str, str]:
     campo = str(erro.get("loc", [""])[-1])
     tipo = erro.get("type", "")
     ctx = erro.get("ctx", {})
+    valores_enum = ctx.get("expected", [])
+    if isinstance(valores_enum, str):
+        valores_enum = valores_enum.replace("'", "").replace(" or ", ", ")
+    else:
+        valores_enum = ", ".join(str(valor) for valor in valores_enum)
     mensagens = {
         "missing": f"O campo '{campo}' é obrigatório.",
         "string_too_short": (
@@ -94,7 +99,7 @@ def _mensagem_de_validacao(erro: dict[str, Any]) -> tuple[str, str]:
         ),
         "enum": (
             f"Valor inválido para '{campo}'. Valores aceitos: "
-            + ", ".join(str(valor) for valor in ctx.get("expected", []))
+            + valores_enum
         ),
         "date_parsing": f"Data inválida em '{campo}'. Use o formato AAAA-MM-DD.",
         "date_from_datetime_parsing": (

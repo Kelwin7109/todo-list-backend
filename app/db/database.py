@@ -1,39 +1,42 @@
-"""Conexão e ciclo de sessões do banco."""
+"""Infraestrutura de banco: engine, fábrica de sessões e a classe Base do ORM."""
+from __future__ import annotations
 
 from collections.abc import Generator
+from typing import Any
 
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.config import obter_configuracao
 
 
-def _opcoes_do_engine(url: str) -> dict:
+def _opcoes_do_engine(url: str) -> dict[str, Any]:
+    """O SQLAlchemy precisa de opções diferentes para SQLite e PostgreSQL."""
     if url.startswith("sqlite"):
-        options: dict = {"connect_args": {"check_same_thread": False}}
-        if url in {"sqlite://", "sqlite:///:memory:"}:
-            options["poolclass"] = StaticPool
-        return options
+        return {
+            "connect_args": {"check_same_thread": False},
+            "poolclass": StaticPool,
+        }
     return {"pool_pre_ping": True}
 
 
-engine: Engine = create_engine(
-    obter_configuracao().url_banco,
-    **_opcoes_do_engine(obter_configuracao().url_banco),
-)
+_url = obter_configuracao().url_banco
+engine = create_engine(_url, echo=False, **_opcoes_do_engine(_url))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
 
 def criar_tabelas() -> None:
-    import app.models  # noqa: F401  registra os modelos antes do create_all
+    """Cria as tabelas do banco de dados, caso não existam."""
+
+    from app import models  # noqa: F401  (registra os modelos na metadata)
 
     Base.metadata.create_all(bind=engine)
 
 
-def obter_sessao() -> Generator:
+def obter_sessao() -> Generator[Session, None, None]:
+    """Fornece uma sessão de banco de dados para uso em um contexto `with` ou como dependência do FastAPI."""
     sessao = SessionLocal()
     try:
         yield sessao

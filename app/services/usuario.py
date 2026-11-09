@@ -52,11 +52,11 @@ class UsuarioServico:
         return Sessao(usuario=usuario, token=self._exigir_tokens().emitir(usuario.id))
 
     def usuario_do_token(self, token: str) -> Usuario:
-        """Devolve o usuÃ¡rio identificado pelo token vÃ¡lido.
+        """Devolve o usuário identificado pelo token valido.
 
         Raises:
-            TokenInvalido: token invÃ¡lido ou vencido, ou token de um usuÃ¡rio
-                que nÃ£o existe mais.
+            TokenInvalido: token inválido ou vencido, ou token de um usuário
+                que não existe mais.
         """
         usuario_id = self._exigir_tokens().ler(token)
         usuario = self._repositorio.buscar_por_id(usuario_id)

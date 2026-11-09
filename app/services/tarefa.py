@@ -23,3 +23,7 @@ class TarefaServico:
             usuario_id=usuario_id,
         )
         return self._repositorio.salvar(tarefa)
+
+    def listar(self, usuario_id: int) -> list[Tarefa]:
+        """Lista as tarefas do usuário autenticado via repositório."""
+        return self._repositorio.listar(usuario_id)
