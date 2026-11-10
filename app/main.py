@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app.api.routers import tasks, usuarios
 from app.core.config import obter_configuracao
 from app.core.exceptions import (
+    AcessoNaoAutorizado,
     EmailJaCadastrado,
     ErroDeDominio,
     NaoAutenticado,
@@ -26,6 +27,7 @@ from app.db.database import criar_tabelas
 # importa: um erro mais específico que herda de ErroDeDominio fica acima dele.
 STATUS_POR_ERRO: tuple[tuple[type[ErroDeDominio], int], ...] = (
     (NaoAutenticado, 401),
+    (AcessoNaoAutorizado, 403),
     (UsuarioNaoEncontrado, 404),
     (RecursoNaoEncontrado, 404),
     (EmailJaCadastrado, 409),
@@ -51,7 +53,7 @@ async def ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Todo List API",
     description="Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC).",
-    version="0.7.0",
+    version="0.8.0",
     lifespan=ciclo_de_vida,
 )
 

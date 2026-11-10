@@ -22,6 +22,10 @@ class UsuarioNaoEncontrado(RecursoNaoEncontrado):
     mensagem = "Usuário não encontrado."
 
 
+class TarefaNaoEncontrada(RecursoNaoEncontrado):
+    mensagem = "Tarefa não encontrada."
+
+
 # Regra de negócio inválida — a camada HTTP traduz esta família em 422.
 class RegraDeNegocioViolada(ErroDeDominio):
     """A operação é compreensível, mas contraria uma regra do negócio."""
@@ -39,7 +43,7 @@ class ValorInvalido(RegraDeNegocioViolada):
     mensagem = "Valor inválido para o campo."
 
 
-# Conflito e autenticacao — traduzidos em 409 e 401.
+# Conflito, autenticação e autorização — traduzidos em 409, 401 e 403.
 class EmailJaCadastrado(ErroDeDominio):
     """Um e-mail não pode ser usado por dois usuários.
 
@@ -65,3 +69,7 @@ class TokenInvalido(NaoAutenticado):
     """Token de acesso ausente, expirado, adulterado ou de usuário removido."""
 
     mensagem = "Sessão inválida. Entre novamente."
+
+
+class AcessoNaoAutorizado(ErroDeDominio):
+    mensagem = "Esta tarefa pertence a outro usuário."
