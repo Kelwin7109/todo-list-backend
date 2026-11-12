@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 
 from app.core.datas import agora_utc
@@ -23,6 +24,7 @@ class Tarefa(Base):
         Integer, ForeignKey("usuarios.id"), nullable=False, index=True
     )
     titulo = Column(String(200), nullable=False)
+    # Colunas privadas: somente concluir e reabrir podem alterá-las.
     _status = Column("status", String(20), nullable=False)
     prioridade = Column(String(20), nullable=False)
     prazo = Column(Date, nullable=True)
@@ -44,7 +46,7 @@ class Tarefa(Base):
         prioridade: PrioridadeTarefa | str = PrioridadeTarefa.MEDIA,
         prazo: date | None = None,
     ) -> None:
-        """Cria tarefa sempre pendente e ainda sem data de conclusão (RN-02)."""
+        """Cria tarefa sempre pendente e sem data de conclusão (RN-03)."""
         self.usuario_id = usuario_id
         self.titulo = titulo
         self.prioridade = prioridade
@@ -52,15 +54,45 @@ class Tarefa(Base):
         self._status = StatusTarefa.PENDENTE.value
         self._concluido_em = None
 
-    @property
+    @hybrid_property
     def status(self) -> StatusTarefa:
-        """Status como membro do enum. Somente leitura."""
+        """Status como enum; concluir e reabrir são os caminhos para alterá-lo."""
         return StatusTarefa(self._status)
+
+    @status.expression
+    def status(cls) -> Column:  # noqa: N805
+        """Expõe a coluna de status para filtros e expressões em consultas SQL."""
+        return cls._status
 
     @property
     def concluido_em(self) -> datetime | None:
-        """Momento da conclusão; somente leitura."""
+        """Momento da conclusão, ao ser concluída; somente leitura."""
         return self._concluido_em
+
+    # ------------------------------ operações
+    def concluir(self, agora: datetime | None = None) -> None:
+        """Conclui a tarefa e registra o momento; repetir não altera a data original."""
+        if self.status is StatusTarefa.CONCLUIDA:
+            return
+        self._status = StatusTarefa.CONCLUIDA.value
+        self._concluido_em = agora or agora_utc()
+
+    def reabrir(self) -> None:
+        """Reabre a tarefa concluída, limpando a data; se pendente, não faz nada."""
+        if self.status is StatusTarefa.PENDENTE:
+            return
+        self._status = StatusTarefa.PENDENTE.value
+        self._concluido_em = None
+
+    def definir_status(
+        self, novo_status: StatusTarefa | str, agora: datetime | None = None
+    ) -> None:
+        """Aplica a operação correta para o status recebido, preservando a RN-03."""
+        status = StatusTarefa(novo_status)
+        if status is StatusTarefa.CONCLUIDA:
+            self.concluir(agora)
+        else:
+            self.reabrir()
 
     def pertence_a(self, usuario_id: int) -> bool:
         """Informa se a tarefa é de um determinado usuário."""

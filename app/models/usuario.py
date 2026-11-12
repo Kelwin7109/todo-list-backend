@@ -16,6 +16,7 @@ from app.core.datas import agora_utc
 from app.core.exceptions import ValorInvalido
 from app.core.security import HashDeSenha
 from app.db.database import Base
+from app.models.enums import StatusTarefa
 
 if TYPE_CHECKING:
     # Importado apenas para anotações de tipo; evita importação circular.
@@ -48,7 +49,7 @@ class Usuario(Base):
 
     @staticmethod
     def normalizar_email(email: str) -> str:
-        """Padroniza o e-mail antes de gravar ou comparar."""
+        """Padroniza o e-mail único antes de gravar ou comparar (RN-01)."""
         return email.strip().lower()
 
     def definir_senha(self, senha: str, hasher: HashDeSenha) -> None:
@@ -58,6 +59,14 @@ class Usuario(Base):
     def senha_confere(self, senha: str, hasher: HashDeSenha) -> bool:
         """Informa se a senha apresentada corresponde à cadastrada."""
         return hasher.verificar(senha, self._senha_hash)
+
+    def tarefas_pendentes(self) -> list[Tarefa]:
+        """Devolve as tarefas do usuário que ainda estão pendentes."""
+        return [
+            tarefa
+            for tarefa in self.tarefas
+            if tarefa.status is StatusTarefa.PENDENTE
+        ]
 
     @validates("nome")
     def validar_nome(self, _campo: str, valor: str) -> str:

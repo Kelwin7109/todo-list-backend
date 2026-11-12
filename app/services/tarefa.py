@@ -7,7 +7,7 @@ from datetime import date
 from typing import Any
 
 from app.core.exceptions import AcessoNaoAutorizado, TarefaNaoEncontrada
-from app.models.enums import PrioridadeTarefa
+from app.models.enums import PrioridadeTarefa, StatusTarefa
 from app.models.tarefa import Tarefa
 from app.repositories.tarefa import TarefaRepositorio
 
@@ -21,6 +21,7 @@ class AlteracoesDaTarefa:
     """Campos que um PATCH pediu para alterar."""
 
     titulo: Any = NAO_INFORMADO
+    status: Any = NAO_INFORMADO
     prioridade: Any = NAO_INFORMADO
     prazo: Any = NAO_INFORMADO
 
@@ -67,6 +68,9 @@ class TarefaServico:
     ) -> Tarefa:
         """Aplica as alterações informadas e devolve a tarefa.
 
+        A RN-03 não aparece no serviço: a mudança de status é delegada a
+        Tarefa.definir_status.
+
         Raises:
             TarefaNaoEncontrada: quando a tarefa não existe.
             AcessoNaoAutorizado: quando a tarefa pertence a outro usuário.
@@ -78,6 +82,8 @@ class TarefaServico:
             tarefa.prioridade = alteracoes.prioridade
         if alteracoes.informado("prazo"):
             tarefa.prazo = alteracoes.prazo
+        if alteracoes.informado("status"):
+            tarefa.definir_status(StatusTarefa(alteracoes.status))
         return self._repositorio.salvar(tarefa)
 
     def remover(self, tarefa_id: int, usuario_id: int) -> None:
