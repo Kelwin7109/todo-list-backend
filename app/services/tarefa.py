@@ -9,6 +9,7 @@ from typing import Any
 from app.core.exceptions import AcessoNaoAutorizado, TarefaNaoEncontrada
 from app.models.enums import PrioridadeTarefa, StatusTarefa
 from app.models.tarefa import Tarefa
+from app.repositories import FiltroDeTarefas
 from app.repositories.tarefa import TarefaRepositorio
 
 
@@ -45,9 +46,9 @@ class TarefaServico:
         )
         return self._repositorio.salvar(tarefa)
 
-    def listar(self, usuario_id: int) -> list[Tarefa]:
-        """Lista as tarefas do usuário autenticado via repositório."""
-        return self._repositorio.listar(usuario_id)
+    def listar(self, filtro: FiltroDeTarefas) -> list[Tarefa]:
+        """Lista as tarefas conforme os critérios informados."""
+        return self._repositorio.listar(filtro)
 
     def buscar(self, tarefa_id: int, usuario_id: int) -> Tarefa:
         """Devolve uma tarefa do usuário autenticado.

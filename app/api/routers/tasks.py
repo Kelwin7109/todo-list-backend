@@ -3,13 +3,19 @@
 O dono das tarefas é SEMPRE quem está autenticado (vem do token). Não existe
 mais `usuarioId` na URL nem no corpo: antes, bastava trocar esse número para
 ler, alterar ou apagar a tarefa de outra pessoa.
+
+Os nomes públicos ficam em camelCase (como `prazoAte`) e, no Python, em
+snake_case; o alias faz essa ponte.
 """
 
+from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.dependencies import UsuarioAtual, obter_tarefa_servico
+from app.models.enums import PrioridadeTarefa, StatusTarefa
+from app.repositories import FiltroDeTarefas
 from app.schemas import TarefaCreate, TarefaOut, TarefaUpdate
 from app.services import AlteracoesDaTarefa, TarefaServico
 
@@ -55,14 +61,37 @@ def criar_task(
     summary="Listar as tarefas do usuário logado",
 )
 def listar_tasks(
-    usuario: UsuarioAtual, servico: Servico, response: Response
+    usuario: UsuarioAtual,
+    servico: Servico,
+    response: Response,
+    status_tarefa: Annotated[StatusTarefa | None, Query(alias="status")] = None,
+    prioridade: Annotated[PrioridadeTarefa | None, Query()] = None,
+    prazo_ate: Annotated[
+        date | None,
+        Query(
+            alias="prazoAte",
+            description="Inclui tarefas com prazo até esta data (AAAA-MM-DD).",
+        ),
+    ] = None,
+    busca: Annotated[
+        str | None,
+        Query(max_length=200, description="Busca este texto no título da tarefa."),
+    ] = None,
 ) -> list[TarefaOut]:
-    """Lista as tarefas do usuário logado.
+    """Lista as tarefas do usuário logado, combinando os filtros informados.
 
     Se não houver tarefas, devolve uma lista vazia: a coleção existe e está
     vazia, então isso não é um erro 404.
     """
-    tarefas = servico.listar(usuario.id)
+    tarefas = servico.listar(
+        FiltroDeTarefas(
+            usuario_id=usuario.id,
+            status=status_tarefa,
+            prioridade=prioridade,
+            prazo_ate=prazo_ate,
+            busca=(busca or "").strip() or None,
+        )
+    )
     response.headers["X-Total-Count"] = str(len(tarefas))
     return tarefas
 
