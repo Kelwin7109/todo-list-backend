@@ -4,8 +4,8 @@ O dono das tarefas é SEMPRE quem está autenticado (vem do token). Não existe
 mais `usuarioId` na URL nem no corpo: antes, bastava trocar esse número para
 ler, alterar ou apagar a tarefa de outra pessoa.
 
-Os nomes públicos ficam em camelCase (como `prazoAte`) e, no Python, em
-snake_case; o alias faz essa ponte.
+Os nomes públicos ficam em camelCase (como `prazoAte` e `ordenarPor`) e, no
+Python, em snake_case; o alias faz essa ponte.
 """
 
 from datetime import date
@@ -14,9 +14,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.dependencies import UsuarioAtual, obter_tarefa_servico
-from app.models.enums import PrioridadeTarefa, StatusTarefa
+from app.models.enums import (
+    CampoOrdenacao,
+    Ordem,
+    PrioridadeTarefa,
+    StatusTarefa,
+)
 from app.repositories import FiltroDeTarefas
-from app.schemas import TarefaCreate, TarefaOut, TarefaUpdate
+from app.schemas import ResumoOut, TarefaCreate, TarefaOut, TarefaUpdate
 from app.services import AlteracoesDaTarefa, TarefaServico
 
 router = APIRouter(
@@ -77,23 +82,43 @@ def listar_tasks(
         str | None,
         Query(max_length=200, description="Busca este texto no título da tarefa."),
     ] = None,
+    ordenar_por: Annotated[
+        CampoOrdenacao, Query(alias="ordenarPor")
+    ] = CampoOrdenacao.CRIADO_EM,
+    ordem: Annotated[Ordem, Query()] = Ordem.DESC,
+    limite: Annotated[int, Query(ge=1, le=1000, alias="limit")] = 100,
+    deslocamento: Annotated[int, Query(ge=0, alias="offset")] = 0,
 ) -> list[TarefaOut]:
-    """Lista as tarefas do usuário logado, combinando os filtros informados.
+    """Lista as tarefas combinando filtros, ordenação e paginação.
 
     Se não houver tarefas, devolve uma lista vazia: a coleção existe e está
-    vazia, então isso não é um erro 404.
+    vazia, então isso não é um erro 404. O X-Total-Count ignora limit e offset;
+    tarefas sem prazo vêm por último.
     """
-    tarefas = servico.listar(
-        FiltroDeTarefas(
-            usuario_id=usuario.id,
-            status=status_tarefa,
-            prioridade=prioridade,
-            prazo_ate=prazo_ate,
-            busca=(busca or "").strip() or None,
-        )
+    filtro = FiltroDeTarefas(
+        usuario_id=usuario.id,
+        status=status_tarefa,
+        prioridade=prioridade,
+        prazo_ate=prazo_ate,
+        busca=(busca or "").strip() or None,
+        ordenar_por=ordenar_por,
+        ordem=ordem,
+        limite=limite,
+        deslocamento=deslocamento,
     )
-    response.headers["X-Total-Count"] = str(len(tarefas))
-    return tarefas
+    pagina = servico.listar(filtro)
+    response.headers["X-Total-Count"] = str(pagina.total)
+    return pagina.tarefas
+
+
+@router.get(
+    "/resumo",
+    response_model=ResumoOut,
+    summary="Resumo para o Painel",
+)
+def resumo_tasks(usuario: UsuarioAtual, servico: Servico) -> ResumoOut:
+    """Total, pendentes, concluídas e atrasadas — os números da página Painel."""
+    return servico.resumo(usuario.id)
 
 
 @router.get(

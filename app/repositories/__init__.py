@@ -1,15 +1,20 @@
-"""Repositórios: a única camada que conversa com o banco de dados.
+"""Repositórios isolam as consultas ao banco de dados.
 
-A regra é: serviço não sabe SQL, rota não sabe banco. Quem precisa de dados
-pede a um repositório.
+Antes, as consultas ficavam dentro das rotas, misturando HTTP, regra e SQL;
+com os repositórios, serviço não sabe SQL e rota não sabe banco.
 """
 
 from app.repositories.base import RepositorioBase
-from app.repositories.tarefa import FiltroDeTarefas, TarefaRepositorio
+from app.repositories.tarefa import (
+    FiltroDeTarefas,
+    PaginaDeTarefas,
+    TarefaRepositorio,
+)
 from app.repositories.usuario import UsuarioRepositorio
 
 __all__ = [
     "FiltroDeTarefas",
+    "PaginaDeTarefas",
     "RepositorioBase",
     "TarefaRepositorio",
     "UsuarioRepositorio",

@@ -1,4 +1,4 @@
-"""Contrato JSON de tarefa."""
+"""Contrato JSON de tarefa e do resumo (Painel/Analytics)."""
 
 from datetime import date
 
@@ -41,3 +41,13 @@ class TarefaOut(EsquemaDeSaida):
     criado_em: DataHoraUTC
     atualizado_em: DataHoraUTC
     concluido_em: DataHoraUTC | None
+
+
+# --- Resumo
+class ResumoOut(EsquemaDeSaida):
+    """Resumo do Painel. Análises da página Analytics terão seu próprio contrato em schemas/analytics.py."""
+
+    total: int
+    pendentes: int
+    concluidas: int
+    atrasadas: int

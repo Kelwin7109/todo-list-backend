@@ -40,3 +40,18 @@ _PESOS = {
     PrioridadeTarefa.MEDIA: 2,
     PrioridadeTarefa.BAIXA: 3,
 }
+
+
+class CampoOrdenacao(str, Enum):
+    """Enum limita a ordenação aos campos oferecidos pela API."""
+
+    CRIADO_EM = "criadoEm"
+    PRAZO = "prazo"
+    PRIORIDADE = "prioridade"
+
+
+class Ordem(str, Enum):
+    """Sentido da ordenação dos resultados."""
+
+    ASC = "asc"
+    DESC = "desc"

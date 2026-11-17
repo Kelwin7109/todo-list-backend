@@ -9,7 +9,7 @@ from typing import Any
 from app.core.exceptions import AcessoNaoAutorizado, TarefaNaoEncontrada
 from app.models.enums import PrioridadeTarefa, StatusTarefa
 from app.models.tarefa import Tarefa
-from app.repositories import FiltroDeTarefas
+from app.repositories import FiltroDeTarefas, PaginaDeTarefas
 from app.repositories.tarefa import TarefaRepositorio
 
 
@@ -31,9 +31,19 @@ class AlteracoesDaTarefa:
         return getattr(self, campo) is not NAO_INFORMADO
 
 
+@dataclass(frozen=True)
+class Resumo:
+    """Números do Painel; análises da página Analytics ficarão em services/analytics.py."""
+
+    total: int
+    pendentes: int
+    concluidas: int
+    atrasadas: int
+
+
 class TarefaServico:
     def __init__(self, repositorio: TarefaRepositorio) -> None:
-        self._repositorio = repositorio
+        self._tarefas = repositorio
 
     def criar(
         self, titulo: str, prioridade: PrioridadeTarefa, prazo: date, usuario_id: int
@@ -44,11 +54,11 @@ class TarefaServico:
             prazo=prazo,
             usuario_id=usuario_id,
         )
-        return self._repositorio.salvar(tarefa)
+        return self._tarefas.salvar(tarefa)
 
-    def listar(self, filtro: FiltroDeTarefas) -> list[Tarefa]:
+    def listar(self, filtro: FiltroDeTarefas) -> PaginaDeTarefas:
         """Lista as tarefas conforme os critérios informados."""
-        return self._repositorio.listar(filtro)
+        return self._tarefas.listar(filtro)
 
     def buscar(self, tarefa_id: int, usuario_id: int) -> Tarefa:
         """Devolve uma tarefa do usuário autenticado.
@@ -57,7 +67,7 @@ class TarefaServico:
             TarefaNaoEncontrada: quando a tarefa não existe.
             AcessoNaoAutorizado: quando a tarefa pertence a outro usuário.
         """
-        tarefa = self._repositorio.buscar_por_id(tarefa_id)
+        tarefa = self._tarefas.buscar_por_id(tarefa_id)
         if tarefa is None:
             raise TarefaNaoEncontrada()
         if not tarefa.pertence_a(usuario_id):
@@ -85,7 +95,7 @@ class TarefaServico:
             tarefa.prazo = alteracoes.prazo
         if alteracoes.informado("status"):
             tarefa.definir_status(StatusTarefa(alteracoes.status))
-        return self._repositorio.salvar(tarefa)
+        return self._tarefas.salvar(tarefa)
 
     def remover(self, tarefa_id: int, usuario_id: int) -> None:
         """Remove a tarefa do usuário autenticado.
@@ -94,4 +104,18 @@ class TarefaServico:
             TarefaNaoEncontrada: quando a tarefa não existe.
             AcessoNaoAutorizado: quando a tarefa pertence a outro usuário.
         """
-        self._repositorio.remover(self.buscar(tarefa_id, usuario_id))
+        self._tarefas.remover(self.buscar(tarefa_id, usuario_id))
+
+    def resumo(self, usuario_id: int, hoje: date | None = None) -> Resumo:
+        """Calcula os números do Painel para o usuário autenticado."""
+        hoje = hoje or date.today()
+        tarefas = self._tarefas.todas_do_usuario(usuario_id)
+        concluidas = sum(
+            1 for tarefa in tarefas if tarefa.status is StatusTarefa.CONCLUIDA
+        )
+        return Resumo(
+            total=len(tarefas),
+            pendentes=len(tarefas) - concluidas,
+            concluidas=concluidas,
+            atrasadas=sum(1 for tarefa in tarefas if tarefa.esta_atrasada(hoje)),
+        )

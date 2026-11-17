@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routers import tasks, usuarios
@@ -52,9 +53,23 @@ async def ciclo_de_vida(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Todo List API",
-    description="Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC).",
-    version="0.10.0",
+    description=(
+        "Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC). "
+        "Use Authorize: faça login, copie o accessToken e cole no botão."
+    ),
+    version="0.12.0",
     lifespan=ciclo_de_vida,
+)
+
+# Sem CORS, o navegador bloqueia a leitura da API; expose_headers libera
+# o X-Total-Count para que o JavaScript consiga ler o total da paginação.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(obter_configuracao().origens_permitidas),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Total-Count"],
 )
 
 
