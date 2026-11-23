@@ -1,12 +1,12 @@
-"""Modelos de domínio: entidades do sistema, com seus dados e regras.
+"""Modelos de domínio: entidades do sistema, com dados e regras próprias.
 
-Cada entidade é responsável por manter o próprio estado válido: o Usuario
-normaliza o próprio e-mail e só aceita a senha em forma de hash; a Tarefa
-nasce sempre pendente e não deixa ninguém mudar o status de fora.
+Antes, as classes eram apenas listas de colunas (modelos anêmicos) e as regras
+viviam nas rotas. Agora cada entidade mantém o próprio estado válido: o Usuario
+normaliza o e-mail e protege a senha, e a Tarefa implementa suas operações.
+A RN-03 está nos métodos concluir e reabrir, o único caminho para mudar o status.
 """
 
-# Importar as entidades aqui registra as tabelas no SQLAlchemy, permitindo que
-# `criar_tabelas()` use `Base.metadata.create_all()`.
+# Estes imports registram as duas tabelas (usuarios e tarefas) na metadata do SQLAlchemy.
 from app.models.tarefa import Tarefa
 from app.models.usuario import Usuario
 

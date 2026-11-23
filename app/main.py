@@ -57,7 +57,7 @@ app = FastAPI(
         "Backend da Todo List – CURSO Desenvolvedor Full Stack (SENAC). "
         "Use Authorize: faça login, copie o accessToken e cole no botão."
     ),
-    version="0.12.0",
+    version="1.0.0",
     lifespan=ciclo_de_vida,
 )
 

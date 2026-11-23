@@ -18,7 +18,7 @@ from app.core.security import HashBcrypt, HashDeSenha, TokenJWT
 from app.db.database import obter_sessao
 from app.models.usuario import Usuario
 from app.repositories import TarefaRepositorio, UsuarioRepositorio
-from app.services import TarefaServico, UsuarioServico
+from app.services import AnalyticsServico, TarefaServico, UsuarioServico
 
 # Deixa a ausencia de token seguir pelo tratador de erros de dominio da API.
 _esquema_bearer = HTTPBearer(
@@ -51,6 +51,13 @@ def obter_tarefa_servico(
 ) -> TarefaServico:
     """Serviço de tarefas, com o repositório de que depende."""
     return TarefaServico(TarefaRepositorio(sessao))
+
+
+def obter_analytics_servico(
+    sessao: Session = Depends(obter_sessao),
+) -> AnalyticsServico:
+    """Serviço de analytics, usando o repositório de tarefas da sessão."""
+    return AnalyticsServico(TarefaRepositorio(sessao))
 
 
 def obter_usuario_atual(

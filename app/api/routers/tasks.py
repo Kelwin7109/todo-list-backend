@@ -13,7 +13,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response, status
 
-from app.api.dependencies import UsuarioAtual, obter_tarefa_servico
+from app.api.dependencies import (
+    UsuarioAtual,
+    obter_analytics_servico,
+    obter_tarefa_servico,
+)
 from app.models.enums import (
     CampoOrdenacao,
     Ordem,
@@ -21,8 +25,8 @@ from app.models.enums import (
     StatusTarefa,
 )
 from app.repositories import FiltroDeTarefas
-from app.schemas import ResumoOut, TarefaCreate, TarefaOut, TarefaUpdate
-from app.services import AlteracoesDaTarefa, TarefaServico
+from app.schemas import AnalyticsOut, ResumoOut, TarefaCreate, TarefaOut, TarefaUpdate
+from app.services import AnalyticsServico, AlteracoesDaTarefa, TarefaServico
 
 router = APIRouter(
     prefix="/tasks",
@@ -119,6 +123,30 @@ def listar_tasks(
 def resumo_tasks(usuario: UsuarioAtual, servico: Servico) -> ResumoOut:
     """Total, pendentes, concluídas e atrasadas — os números da página Painel."""
     return servico.resumo(usuario.id)
+
+
+@router.get(
+    "/analytics",
+    response_model=AnalyticsOut,
+    summary="Ver as análises das tarefas",
+)
+def analytics_tasks(
+    usuario: UsuarioAtual,
+    servico: Annotated[
+        AnalyticsServico, Depends(obter_analytics_servico)
+    ],
+    dias: Annotated[
+        int,
+        Query(ge=1, le=90, description="Quantidade de dias da janela de análise."),
+    ] = 7,
+) -> AnalyticsOut:
+    """Devolve os sete indicadores: total, concluídas, taxa, por dia na janela,
+    pendentes por prioridade, tempo médio, por dia da semana e percentual no prazo.
+
+    Os quatro primeiros indicadores são os mesmos que a página Analytics do
+    front-end calcula atualmente no navegador.
+    """
+    return servico.calcular(usuario.id, dias=dias)
 
 
 @router.get(

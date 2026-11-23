@@ -8,6 +8,8 @@ pydantic[email]==2.13.5
 python-dotenv==1.2.3
 bcrypt==5.0.0               # hash de senha
 PyJWT==2.15.1               # tokens de autenticação
+pandas==3.0.6                # análise de dados da página Analytics
+requests==2.34.2             # cliente HTTP de entrega
 python-multipart==0.0.33
 
 # Somente para desenvolvimento e testes
