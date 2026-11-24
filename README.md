@@ -72,6 +72,24 @@ Rotas de tarefas:
 
 Também há `GET /` para conferir se a API está no ar. A listagem aceita `status`, `prioridade`, `prazoAte`, `busca`, `ordenarPor`, `ordem`, `limit` e `offset`; devolve o total sem paginação no cabeçalho `X-Total-Count`. A consulta do Analytics aceita `dias` entre 1 e 90, com padrão 7.
 
+### Entrada e resposta de cada rota
+
+| Rota | O que enviar | Sucesso | Erros relevantes |
+| --- | --- | --- | --- |
+| `GET /` | Nada | `200`: mensagem de status e caminho de `/docs` | — |
+| `POST /usuarios` | JSON `nome`, `email`, `senha` | `201`: usuário criado (`id`, `nome`, `email`, `criadoEm`) | `409`: e-mail cadastrado; `422`: campos inválidos |
+| `POST /usuarios/login` | JSON `email`, `senha` | `200`: `accessToken`, `tokenType`, `expiraEm`, `usuario` | `401`: credenciais inválidas; `422`: campos inválidos |
+| `GET /usuarios/me` | Token Bearer | `200`: dados do usuário autenticado | `401`: token ausente, inválido ou expirado |
+| `POST /tasks` | Token Bearer e JSON `titulo`; `prioridade` e `prazo` são opcionais | `201`: tarefa criada, inicialmente pendente | `401`: sem autenticação; `422`: campos inválidos |
+| `GET /tasks` | Token Bearer e filtros opcionais descritos abaixo | `200`: lista de tarefas; `X-Total-Count` informa o total antes da paginação | `401`: sem autenticação; `422`: filtro inválido |
+| `GET /tasks/resumo` | Token Bearer | `200`: `total`, `pendentes`, `concluidas`, `atrasadas` | `401`: sem autenticação |
+| `GET /tasks/analytics` | Token Bearer e `dias` opcional (1 a 90; padrão 7) | `200`: métricas e insights do usuário autenticado | `401`: sem autenticação; `422`: `dias` fora do intervalo |
+| `GET /tasks/{tarefa_id}` | Token Bearer e ID inteiro no caminho | `200`: tarefa encontrada | `401`: sem autenticação; `403`: tarefa de outro usuário; `404`: não encontrada; `422`: ID inválido |
+| `PATCH /tasks/{tarefa_id}` | Token Bearer, ID e JSON parcial com `titulo`, `status`, `prioridade` e/ou `prazo` | `200`: tarefa atualizada | `401`: sem autenticação; `403`: tarefa de outro usuário; `404`: não encontrada; `422`: ID ou campos inválidos |
+| `DELETE /tasks/{tarefa_id}` | Token Bearer e ID inteiro no caminho | `204`: tarefa removida, sem corpo de resposta | `401`: sem autenticação; `403`: tarefa de outro usuário; `404`: não encontrada; `422`: ID inválido |
+
+Na listagem, `status` aceita `pendente` ou `concluida`; `prioridade` aceita `baixa`, `media`, `alta` ou `urgente`; `prazoAte` recebe uma data `AAAA-MM-DD`; `busca` procura no título. `ordenarPor` aceita `criadoEm`, `prazo` ou `prioridade`; `ordem` aceita `asc` ou `desc`; `limit` varia de 1 a 1000 (padrão 100) e `offset` começa em 0. As tarefas pertencem sempre ao usuário do token: não se envia `usuarioId` para criá-las.
+
 ## Contrato JSON
 
 Os nomes das propriedades JSON usam camelCase. O cadastro recebe `nome`, `email` e `senha`; a senha tem pelo menos 6 caracteres. Uma tarefa recebe `titulo`, `prioridade` (baixa, media, alta ou urgente) e `prazo` opcional (`AAAA-MM-DD`). Tarefas nascem pendentes; `status` pode ser alterado por PATCH para `concluida` ou `pendente`. A resposta de tarefa inclui `id`, `usuarioId`, `titulo`, `status`, `prioridade`, `prazo`, `criadoEm`, `atualizadoEm` e `concluidoEm`.
